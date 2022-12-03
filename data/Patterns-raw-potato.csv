@@ -123,9 +123,10 @@ Wart,Wart,
     Synchytrium endobioticum ,,Synchytrium endobioticum
 White mold,White mold,
     Sclerotinia sclerotiorum,,Sclerotinia sclerotiorum
-"Potato cyst, golden nematode","Potato cyst, golden nematode",
-    Globodera rostochiensis (Wollenweber) Mulvey & Stone ,,Globodera rostochiensis (Wollenweber) Mulvey & Stone
-    G. pallida (Stone) Mulvey & Stone ,,G. pallida (Stone) Mulvey & Stone
+Potato cyst,Potato cyst,
+golden nematode,golden nematode,
+    Globodera rostochiensis ,,Globodera rostochiensis
+    Globodera pallida ,,Globodera pallida
 Lesion nematode,Lesion nematode,
     Pratylenchus spp,,Pratylenchus spp
     Pratylenchus brachyurus,,Pratylenchus brachyurus
