@@ -11,43 +11,42 @@ def search_semantic_scholar(search, sfields, pageSize):
 
 
 def populate_article_df(search_articles, search_limit):
+    # create dataframe
+    data = pd.DataFrame(columns=["DOI", "Year", "Title", "Abstract"])
+    data_list = list()
     while search_articles.next <= search_limit:
         for item in search_articles.items[search_articles.offset:search_articles.next:]:
-            print(item)
+            # print(item)
+            row = {"DOI": item.externalIds["DOI"],
+                   "Year": item.year,
+                   "Title": item.title,
+                   "Abstract": item.abstract}
+            data_list.append(row)
+
         if search_limit > search_articles.next:
             search_articles.next_page()
         else:
             break
 
+    data = pd.DataFrame.from_records(data_list)
+    return data
+
 
 # %% add search parameters
 searchString = 'first report cassava'
 searchFields = ['externalIds', 'year', 'title', 'abstract']
-#searchLimit ideally should be multiple of pagsize
+# searchLimit ideally should be multiple of pagsize
 pageSize = 5
 searchLimit = 5
-
 
 # %% search for the papers
 
 articles = search_semantic_scholar(searchString, searchFields, pageSize)
-populate_article_df(articles, searchLimit)
-print(articles.total)
-
+articles_dataframe = populate_article_df(articles, searchLimit)
+print(articles_dataframe)
 
 # for item in articles.items:
 #     print(item)
 
 # %% load papers into Data Frame
 
-
-# %% Learning
-# # data = pd.DataFrame()
-# data = pd.DataFrame(columns=["paperId", "Title", "Abstract"])
-# data = data.append({"paperId": paper.paperId,
-#                     "Title": paper.title,
-#                     "Abstract": paper.abstract}, ignore_index=True)
-# # data = data.append(pd.DataFrame([[paper.paperId, paper.title, paper.abstract]]))
-# data.info()
-#
-# print(data)
