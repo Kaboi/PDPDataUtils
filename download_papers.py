@@ -11,19 +11,22 @@ def search_semantic_scholar(search, sfields, pageSize):
 
 
 def populate_article_df(search_articles, search_limit):
-    i = 1
     while search_articles.next <= search_limit:
         for item in search_articles.items[search_articles.offset:search_articles.next:]:
-            print(i)
-            i = i + 1
             print(item)
-        search_articles.next_page()
+        if search_limit > search_articles.next:
+            search_articles.next_page()
+        else:
+            break
+
 
 # %% add search parameters
 searchString = 'first report cassava'
 searchFields = ['externalIds', 'year', 'title', 'abstract']
-pageSize = 10
-searchLimit = 15
+#searchLimit ideally should be multiple of pagsize
+pageSize = 5
+searchLimit = 5
+
 
 # %% search for the papers
 
