@@ -50,7 +50,7 @@ def populate_article_df(search_articles, search_limit, search_crop):
 searchCrop = "Cassava"
 searchString = '"first report" cassava'
 searchFields = ['externalIds', 'year', 'title', 'abstract']
-# searchLimit ideally should be multiple of pagsize
+# searchLimit ideally should be multiple of pagsize max is 100
 pageSize = 100
 searchLimit = 500
 
