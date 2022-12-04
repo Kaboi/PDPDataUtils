@@ -47,12 +47,12 @@ def populate_article_df(search_articles, search_limit, search_crop):
 
 
 # %% add search parameters
-searchCrop = "Cassava"
-searchString = 'first report cassava'
+searchCrop = "Banana"
+searchString = '"first report" banana'
 searchFields = ['externalIds', 'year', 'title', 'abstract']
 # searchLimit ideally should be multiple of pagsize
-pageSize = 5
-searchLimit = 5
+pageSize = 100
+searchLimit = 500
 
 # %% search for the papers
 print("searching for the papers...")
@@ -66,4 +66,4 @@ articles_dataframe = populate_article_df(articles, searchLimit, searchCrop)
 # %% save data frame as CSV
 filename = "data/" + searchCrop + "_Output.xlsx"
 print("saving the file to ", filename)
-articles_dataframe.to_excel(filename, index=False)
+articles_dataframe.to_excel(filename, index=False, engine='xlsxwriter')
