@@ -47,8 +47,8 @@ def populate_article_df(search_articles, search_limit, search_crop):
 
 
 # %% add search parameters
-searchCrop = "Banana"
-searchString = '"first report" banana'
+searchCrop = "Cassava"
+searchString = '"first report" cassava'
 searchFields = ['externalIds', 'year', 'title', 'abstract']
 # searchLimit ideally should be multiple of pagsize
 pageSize = 100
