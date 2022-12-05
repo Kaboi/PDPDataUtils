@@ -5,6 +5,9 @@ from semanticscholar import SemanticScholar
 
 # %% functions
 def search_semantic_scholar(search, sfields, page_size):
+    if page_size > 100:
+        page_size = 100
+
     scholar = SemanticScholar()
     results = scholar.search_paper(search, fields=sfields, limit=page_size)
     return results
@@ -28,6 +31,7 @@ def populate_article_df(search_articles, search_limit, search_crop):
                 # doi = item.externalIds["DOI"]
                 row = {"Crop": search_crop,
                        "DOI": doi_value,
+                       "URL": item.url,
                        "Year": item.year,
                        "Title": item.title,
                        "Abstract": item.abstract}
@@ -49,8 +53,9 @@ def populate_article_df(search_articles, search_limit, search_crop):
 # %% add search parameters
 searchCrop = "Cassava"
 searchString = '"first report" cassava'
-searchFields = ['externalIds', 'year', 'title', 'abstract']
-# searchLimit ideally should be multiple of pagsize max is 100
+searchFields = ['url', 'externalIds', 'year', 'title', 'abstract']
+# searchLimit ideally should be multiple of pagsize and > than pagesize
+# max pagesize is 100
 pageSize = 100
 searchLimit = 500
 
