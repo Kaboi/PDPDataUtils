@@ -8,7 +8,6 @@ from tqdm import tqdm
 
 
 # %% functions
-
 def initial_config():
     nltk.download('punkt')
     user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 ' \
@@ -35,35 +34,42 @@ def search_google_news(search, search_start_date, search_end_date, no_pages):
         else:
             df = pd.DataFrame(result)
 
-    return df if df else None
+    return df if df is not None else None
 
 
 def populate_def_df(news_items_df, search_crop, config):
     # create dataframe
     data_list = list()
-    for index, row in news_items_df.iterrows():
-        # print(row)
-        article = Article(row['link'], config=config)
-        print("Getting article: ", row['link'])
-        article.download()
-        article.parse()
-        article.nlp()
-        row = {"Crop": search_crop,
-               "Date": row['date'],
-               "Title": row['title'],
-               "Summary": article.summary,
-               "Text": article.text,
-               "Keywords": article.keywords}
-        data_list.append(row)
+    for index, row in tqdm(news_items_df.iterrows(), desc="Getting news articles", unit="articles",
+                           total=len(news_items_df), position=0, leave=True, ncols=100,
+                           bar_format='{l_bar}{bar}|{n_fmt}/{total_fmt}'):
+        # enclose the code block below in a try-except block to catch any errors
+        try:
+            article = Article(row['link'], config=config)
+            print("Getting article: ", row['link'])
+            article.download()
+            article.parse()
+            article.nlp()
+            row = {"Crop": search_crop,
+                   "Date": row['date'],
+                   "URL": row['link'],
+                   "Title": row['title'],
+                   "Summary": article.summary,
+                   "Text": article.text,
+                   "Keywords": article.keywords}
+            data_list.append(row)
+        except:
+            print("Error getting article: ", row['link'])
+            continue
     return pd.DataFrame.from_records(data_list)
 
 
 # %% add search parameters
 searchCrop = "Musa"
-searchString = 'banana OR plantain + crop disease'
-startDate = '01/01/2021'
+searchString = 'banana OR plantain crop disease'
+startDate = '01/01/2010'
 endDate = '16/01/2023'
-pageSize = 3
+pageSize = 30
 
 # %% initialize
 search_config = initial_config()
@@ -85,6 +91,6 @@ if news_items is not None:
 # %% save the dataframe
 if news_df is not None:
     print("saving dataframe...")
-    filename = "data/" + searchCrop + "News_Output.xlsx"
+    filename = "data/" + searchCrop + "_News_Output.xlsx"
     print("saving the dataframe to file...", filename)
     news_df.to_excel(filename, index=False, engine='xlsxwriter')
