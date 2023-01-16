@@ -4,39 +4,47 @@ from newspaper import Article
 from newspaper import Config
 import pandas as pd
 import nltk
+from tqdm import tqdm
+
 
 # %% functions
 
 def initial_config():
     nltk.download('punkt')
-    USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 ' \
+    user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 ' \
                  'Safari/537.36 Edg/108.0.1462.76'
     config = Config()
-    config.browser_user_agent = USER_AGENT
+    config.browser_user_agent = user_agent
     config.request_timeout = 10
-    return
+    return config
 
 
 def search_google_news(search, search_start_date, search_end_date, no_pages):
+    df = None
     googlenews = GoogleNews(start=search_start_date, end=search_end_date)
-    googlenews.search(search)
-    result = googlenews.result()
-    df = pd.DataFrame(result)
-
-    for i in range(2, no_pages):
-        googlenews.getpage(i)
+    for i in tqdm(range(1, no_pages+1), desc="Getting news pages", unit="pages", position=0, leave=True, ncols=100,
+                  bar_format='{l_bar}{bar}|{n_fmt}/{total_fmt}'):
+        if i == 1:
+            googlenews.search(search)
+        else:
+            googlenews.getpage(i)
         result = googlenews.result()
-        df = df.append(result, ignore_index=True)
+        if len(result) == 0:
+            print("No more news found")
+            break
+        else:
+            df = pd.DataFrame(result)
 
-    return result
+    return df if df else None
 
 
-def populate_def_df(news_items_df, search_crop):
+def populate_def_df(news_items_df, search_crop, config):
     # create dataframe
     data_list = list()
     for index, row in news_items_df.iterrows():
         # print(row)
         article = Article(row['link'], config=config)
+        print("Getting article: ", row['link'])
         article.download()
         article.parse()
         article.nlp()
@@ -55,10 +63,10 @@ searchCrop = "Musa"
 searchString = 'banana OR plantain + crop disease'
 startDate = '01/01/2021'
 endDate = '16/01/2023'
-pageSize = 10
+pageSize = 3
 
 # %% initialize
-initial_config()
+search_config = initial_config()
 
 # %% search for the papers
 print("searching for news...")
@@ -67,12 +75,16 @@ print("search complete.")
 
 # %% populate the dataframe
 print("populating dataframe with news items...")
-news_df = populate_def_df(news_items, searchCrop)
-print("dataframe populated.")
+# check if news_items is not None then populate
+news_df = None
+if news_items is not None:
+    news_df = populate_def_df(news_items, searchCrop, search_config)
+    print("dataframe populated.")
+
 
 # %% save the dataframe
-print("saving dataframe...")
-filename = "data/" + searchCrop + "News_Output.xlsx"
-print("saving the dataframe to file...", filename)
-news_df.to_excel(filename, index=False, engine='xlsxwriter')
-
+if news_df is not None:
+    print("saving dataframe...")
+    filename = "data/" + searchCrop + "News_Output.xlsx"
+    print("saving the dataframe to file...", filename)
+    news_df.to_excel(filename, index=False, engine='xlsxwriter')
