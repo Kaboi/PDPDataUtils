@@ -1,4 +1,6 @@
 # %% Load libraries
+import time
+
 from GoogleNews import GoogleNews
 from newspaper import Article
 from newspaper import Config
@@ -18,6 +20,7 @@ def initial_config():
     return config
 
 
+# add time.sleep to delay the requests for getpage(i)
 def search_google_news(search, search_start_date, search_end_date, no_pages):
     df = None
     googlenews = GoogleNews(start=search_start_date, end=search_end_date)
@@ -33,6 +36,7 @@ def search_google_news(search, search_start_date, search_end_date, no_pages):
             break
         else:
             df = pd.DataFrame(result)
+        time.sleep(5)
 
     return df if df is not None else None
 
@@ -65,8 +69,8 @@ def populate_def_df(news_items_df, search_crop, config):
 
 
 # %% add search parameters
-searchCrop = "Musa"
-searchString = 'banana OR plantain crop disease'
+searchCrop = "SweetPotato"
+searchString = 'p"Sweet potato" or Sweetpotato crop disease'
 startDate = '01/01/2010'
 endDate = '16/01/2023'
 pageSize = 30

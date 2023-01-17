@@ -1,4 +1,4 @@
-semanticscholar~=0.3.1
+semanticscholar~=0.3.2
 pandas~=1.5.1
 numpy~=1.23.4
 srsly~=2.4.3
