@@ -2,17 +2,22 @@
 # %% imports
 import spacy
 from prodigy.components.db import connect
+from prodigy.components.preprocess import split_sentences
 import os
+import re
 
 # %% parameters
+# db_name = "tags_output"
 db_name = "ciat_ner_v2_combined_rev"
 
 # %% load data and model for tokenization
 print("loading data and model...")
+nlp = spacy.load("en_core_web_lg")
 db = connect()
 prodigy_annotations = db.get_dataset(db_name)
-annotations = ((ann["text"], ann) for ann in prodigy_annotations)
-nlp = spacy.load("en_core_web_lg")
+prodigy_split_annotations = split_sentences(nlp, prodigy_annotations, min_length=30)
+# annotations = ((ann["text"], ann) for ann in prodigy_annotations)
+annotations = ((ann["text"], ann) for ann in prodigy_split_annotations)
 
 # %% convert to IOB format and append to list
 print("converting to IOB format...")
@@ -25,6 +30,10 @@ for doc, eg in nlp.pipe(annotations, as_tuples=True):
     # print(doc.text, iob_tags)
     for token, tag in zip(doc, iob_tags):
         lines.append(f"{token.text}\t{tag}\n")
+        # token_text = re.sub("\n+", "\n", token.text)
+        # lines.append(f"{token_text}\t{tag}\n")
+        # lines.append(f"{token.text}\t{tag}\n")
+    lines.append(f"\n")
 
 # %% save to file
 print("saving to file...")
