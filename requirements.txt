@@ -6,3 +6,7 @@ nltk~=3.7
 googlenews~=1.6.6
 tqdm~=4.64.1
 newspaper3k~=0.2.8
+spacy~=3.3.1
+prodigy~=1.11.8
+openalexapi~=0.0.1a0
+jsonlines~=2.0.0
