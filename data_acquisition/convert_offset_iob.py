@@ -40,12 +40,12 @@ def adjust_annotation_spans(new_sentence_start, anns):
 
 
 # Function to split a list of texts and their spans into sentences
-def split_sentences(nlp, anns, min_length):
+def split_sentences(lnlp, anns, min_length):
     new_anns = []
     for ann in anns:
         txt = ann["text"]
         spns = ann["spans"]
-        doc = nlp(txt)
+        doc = lnlp(txt)
         start = 0
         for sent in doc.sents:
             if sent.end - start >= min_length:
@@ -66,14 +66,19 @@ file_input_path = os.path.join(file_path, in_file)
 file_output_path = os.path.join(file_path, out_file)
 
 # Load the English tokenizer from spaCy
-nlp = spacy.load("en_core_web_sm", disable=["parser", "ner", "textcat"])
+nlp = spacy.load("en_core_web_lg", disable=["parser", "ner", "textcat"])
+
+# Add the "sentencizer" component to the pipeline
+if not nlp.has_pipe("sentencizer"):
+    nlp.add_pipe("sentencizer")
+
 
 # Load the JSONL annotations file
 with open(file_input_path, "r") as f:
     annotations = [json.loads(line) for line in f]
 
 # Process the annotations by splitting the sentences with the specified minimum length
-new_annotations = split_sentences(nlp, annotations, min_length=30)
+new_annotations = split_sentences(nlp, annotations, min_length=100)
 
 # Open the output file
 with open(file_output_path, "w") as output_file:
@@ -87,11 +92,3 @@ with open(file_output_path, "w") as output_file:
         for token, tag in iob_tags:
             output_file.write(f"{token}\t{tag}\n")
         output_file.write("\n")
-
-
-# Load the JSONL annotations file
-file_path = "annotations.jsonl"
-with open(file_path, "r") as f:
-    prodigy_annotations = [json.loads(line) for line in f]
-
-
