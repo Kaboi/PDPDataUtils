@@ -22,14 +22,15 @@ transformer_model = "None"
 
 
 # %% Functions
-def generate_output_filename(in_file_path, transformer_model):
-    # Get the file name without the extension
+def generate_output_filename(in_file_path, transformer="None"):
+    # Get the file name including base without the extension
     file_name = os.path.splitext(os.path.basename(in_file_path))[0]
+    dir_path = os.path.dirname(in_file_path)
     # Define the output file name
-    if transformer_model is not None:
-        return file_name + "-iob-tags-" + transformer_model + ".tsv"
+    if transformer != "None":
+        return os.path.join(dir_path, file_name + "-output-iob-tags-" + transformer + ".tsv")
     else:
-        return file_name + "-iob-tags.tsv"
+        return os.path.join(dir_path, file_name + "-output-iob-tags.tsv")
 
 
 # Function to convert a single text and its spans to IOB format
