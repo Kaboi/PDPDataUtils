@@ -1,18 +1,40 @@
+# %% imports
 import json
 import os
 import spacy
 from transformers import BertTokenizerFast, RobertaTokenizerFast, AutoTokenizer
 
+# %% variables
+
 # Edit paths here
-transformer_model = "bert-base-uncased"  # Choose from "bert-base-uncased", "roberta-base", "allenai/scibert_scivocab_uncased"
-
 file_path = "/home/leroy/Dev/Code/PDPAnnotationDataUtils/annotated_data"
-in_file = "tests-mine.jsonl"
-# in_file = "ciat_ner_v2_combined_rev_20230106.jsonl"
+# in_file = "tests-mine.jsonl"
+in_file = "tests-mine_2.jsonl"
+out_file = "tests-mine_2-output-iob-tags-nws.tsv"
 # out_file = "test-mine-output-iob-tags.tsv"
-# out_file = "ciat_ner_v2_combined_rev_20230106-iob-tags" + transformer_model + ".tsv"
-out_file = "tests-mine-output-iob-tags" + transformer_model + ".tsv"
+# out_file = "tests-mine-output-iob-tags" + transformer_model + ".tsv"
 
+# in_file = "ciat_ner_v2_combined_rev_20230106.jsonl"
+# out_file = "ciat_ner_v2_combined_rev_20230106-iob-tags-nws.tsv"
+# out_file = "ciat_ner_v2_combined_rev_20230106-iob-tags" + transformer_model + ".tsv"
+
+# Define the input file path
+file_input_path = os.path.join(file_path, in_file)
+# Define the output file path
+file_output_path = os.path.join(file_path, out_file)
+
+# Set the model to use or default to spacy
+
+# Choose from "bert-base-uncased", "roberta-base", "allenai/scibert_scivocab_uncased",
+# "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext", None : to use spacy tokenizer
+transformer_model = "None"
+# transformer_model = "bert-base-uncased"
+# transformer_model = "roberta-base"
+# transformer_model = "allenai/scibert_scivocab_uncased"
+# transformer_model = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
+
+
+# %% Functions
 
 # Function to convert a single text and its spans to IOB format
 def convert_to_iob_spacy(lnlp, txt, spns):
@@ -88,10 +110,44 @@ def split_sentences(lnlp, anns, min_length):
     return new_anns
 
 
-# Define the input file path
-file_input_path = os.path.join(file_path, in_file)
-# Define the output file path
-file_output_path = os.path.join(file_path, out_file)
+# Function to load the JSONL annotations file
+def load_annotations(in_file_path):
+    with open(in_file_path, "r") as f:
+        # load json objects from jsonl and remove extra whitespaces from the text using textacy
+        anns = [json.loads(line) for line in f]
+    return anns
+
+
+def convert_to_iob_save(anns, out_file_path, transformer="None") -> None:
+    # Open the output file
+    with open(out_file_path, "w") as output_file:
+        # Iterate through all the annotations and convert them to IOB format
+        for annotation in anns:
+            text = annotation["text"]
+            spans = annotation["spans"]
+
+            if transformer != "None":
+                if transformer == "bert-base-uncased":
+                    hf_tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
+                elif transformer == "roberta-base":
+                    hf_tokenizer = RobertaTokenizerFast.from_pretrained("roberta-base")
+                elif transformer == "allenai/scibert_scivocab_uncased":
+                    hf_tokenizer = AutoTokenizer.from_pretrained("allenai/scibert_scivocab_uncased")
+                else:
+                    raise ValueError(f"Unsupported transformer model: {transformer}")
+
+                iob_tags = convert_to_iob_huggingface(hf_tokenizer, text, spans)
+            else:
+                iob_tags = convert_to_iob_spacy(nlp, text, spans)
+
+            # Write the IOB tags to the output file
+            for token, tag in iob_tags:
+                output_file.write(f"{token}\t{tag}\n")
+            output_file.write("\n")
+
+
+# %% load the files
+annotations = load_annotations(file_input_path)
 
 # Load the English tokenizer from spaCy
 nlp = spacy.load("en_core_web_lg", disable=["parser", "ner", "textcat"])
@@ -100,40 +156,7 @@ nlp = spacy.load("en_core_web_lg", disable=["parser", "ner", "textcat"])
 if not nlp.has_pipe("sentencizer"):
     nlp.add_pipe("sentencizer")
 
-# Load the JSONL annotations file
-with open(file_input_path, "r") as f:
-    annotations = [json.loads(line) for line in f]
-
 # Process the annotations by splitting the sentences with the specified minimum length
 new_annotations = split_sentences(nlp, annotations, min_length=100)
 
-# Open the output file
-with open(file_output_path, "w") as output_file:
-    # Iterate through all the annotations and convert them to IOB format
-    for annotation in new_annotations:
-        text = annotation["text"]
-        spans = annotation["spans"]
-
-        # Choose the tokenizer based on your preference
-        use_huggingface = True  # Set this to True if you want to use Hugging Face's tokenizer
-
-        if use_huggingface:
-            if transformer_model == "bert-base-uncased":
-                hf_tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
-            elif transformer_model == "roberta-base":
-                hf_tokenizer = RobertaTokenizerFast.from_pretrained("roberta-base")
-            elif transformer_model == "allenai/scibert_scivocab_uncased":
-                hf_tokenizer = AutoTokenizer.from_pretrained("allenai/scibert_scivocab_uncased")
-            else:
-                raise ValueError(f"Unsupported transformer model: {transformer_model}")
-
-            iob_tags = convert_to_iob_huggingface(hf_tokenizer, text, spans)
-        else:
-            iob_tags = convert_to_iob_spacy(nlp, text, spans)
-
-        # Write the IOB tags to the output file
-        for token, tag in iob_tags:
-            output_file.write(f"{token}\t{tag}\n")
-        output_file.write("\n")
-
-
+convert_to_iob_save(new_annotations, file_output_path, transformer_model)
