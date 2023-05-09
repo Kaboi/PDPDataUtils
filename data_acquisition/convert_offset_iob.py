@@ -8,23 +8,10 @@ from transformers import BertTokenizerFast, RobertaTokenizerFast, AutoTokenizer
 
 # Edit paths here
 file_path = "/home/leroy/Dev/Code/PDPAnnotationDataUtils/annotated_data"
-# in_file = "tests-mine.jsonl"
-in_file = "tests-mine_2.jsonl"
-out_file = "tests-mine_2-output-iob-tags-nws.tsv"
-# out_file = "test-mine-output-iob-tags.tsv"
-# out_file = "tests-mine-output-iob-tags" + transformer_model + ".tsv"
-
+in_file = "tests-mine.jsonl"
 # in_file = "ciat_ner_v2_combined_rev_20230106.jsonl"
-# out_file = "ciat_ner_v2_combined_rev_20230106-iob-tags-nws.tsv"
-# out_file = "ciat_ner_v2_combined_rev_20230106-iob-tags" + transformer_model + ".tsv"
-
-# Define the input file path
-file_input_path = os.path.join(file_path, in_file)
-# Define the output file path
-file_output_path = os.path.join(file_path, out_file)
 
 # Set the model to use or default to spacy
-
 # Choose from "bert-base-uncased", "roberta-base", "allenai/scibert_scivocab_uncased",
 # "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext", None : to use spacy tokenizer
 transformer_model = "None"
@@ -35,6 +22,15 @@ transformer_model = "None"
 
 
 # %% Functions
+def generate_output_filename(in_file_path, transformer_model):
+    # Get the file name without the extension
+    file_name = os.path.splitext(os.path.basename(in_file_path))[0]
+    # Define the output file name
+    if transformer_model is not None:
+        return file_name + "-iob-tags-" + transformer_model + ".tsv"
+    else:
+        return file_name + "-iob-tags.tsv"
+
 
 # Function to convert a single text and its spans to IOB format
 def convert_to_iob_spacy(lnlp, txt, spns):
@@ -146,7 +142,13 @@ def convert_to_iob_save(anns, out_file_path, transformer="None") -> None:
             output_file.write("\n")
 
 
-# %% load the files
+# %% Main
+
+# Define the input file path
+file_input_path = os.path.join(file_path, in_file)
+# Define the output file path
+file_output_path = generate_output_filename(file_input_path, transformer_model)
+
 annotations = load_annotations(file_input_path)
 
 # Load the English tokenizer from spaCy
