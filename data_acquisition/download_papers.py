@@ -3,6 +3,7 @@ import re
 import pandas as pd
 from semanticscholar import SemanticScholar
 from textacy import preprocessing
+from tqdm import tqdm
 
 
 # %% functions
@@ -15,11 +16,26 @@ def search_semantic_scholar(search, sfields, page_size):
     return results
 
 
-def populate_article_df(search_articles, search_limit, search_crop):
+def populate_article_df(search_articles, search_limit, page_size, search_crop):
     # create dataframe
     num_of_skipped_records = 0
     data_list = list()
-    while search_articles.next <= search_limit:
+    if page_size > 100:
+        page_size = 100
+
+    # -(a // -b) for ceil division rather than floor
+    display_counter: int = -((search_articles.total if search_limit > search_articles.total else search_limit) // -page_size)
+
+
+    # Initialize the tqdm progress bar
+    pbar = tqdm(total=display_counter, initial=0, desc="Processing articles", unit="pages", position=0, leave=True, ncols=100,
+            bar_format='{l_bar}{bar}|{n_fmt}/{total_fmt}')
+
+    for i in range(1, display_counter+1):
+        if search_articles.next > search_limit:
+            pbar.update(display_counter - pbar.n)  # update the remaining iterations
+            break
+
         for item in search_articles.items[search_articles.offset:search_articles.next or None]:
             # print(item)
             if (item.abstract is not None) and (len(item.externalIds) > 0):
@@ -45,6 +61,15 @@ def populate_article_df(search_articles, search_limit, search_crop):
             search_articles.next_page()
         else:
             break
+
+        # Update the progress bar at the end of each loop
+        pbar.update()
+
+    # If loop finished prematurely, make sure progress bar is at 100%
+    if pbar.n < display_counter:
+        pbar.update(display_counter - pbar.n)
+
+    pbar.close()
 
     if num_of_skipped_records > 0:
         print(num_of_skipped_records, " empty abstracts or no identifier left out.")
@@ -88,7 +113,7 @@ articles = search_semantic_scholar(searchString, searchFields, pageSize)
 
 # %% load papers into Data Frame
 print("populating data to a limit of ", searchLimit)
-articles_dataframe = populate_article_df(articles, searchLimit, searchCrop)
+articles_dataframe = populate_article_df(articles, searchLimit, pageSize, searchCrop)
 # print(articles_dataframe)
 
 # %% save data frame as CSV
