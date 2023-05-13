@@ -79,8 +79,8 @@ searchString = "First report of Cassava"
 searchFields = ['url', 'externalIds', 'year', 'title', 'abstract']
 # searchLimit ideally should be multiple of pagesize and > than pagesize
 # max pagesize is 100
-pageSize = 100
-searchLimit = 500
+pageSize = 10
+searchLimit = 50
 
 # %% search for the papers
 print("searching for the papers...")
