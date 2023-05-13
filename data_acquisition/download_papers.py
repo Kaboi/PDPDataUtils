@@ -1,4 +1,5 @@
 # %% Load libraries
+import re
 import pandas as pd
 from semanticscholar import SemanticScholar
 from textacy import preprocessing
@@ -19,7 +20,7 @@ def populate_article_df(search_articles, search_limit, search_crop):
     num_of_skipped_records = 0
     data_list = list()
     while search_articles.next <= search_limit:
-        for item in search_articles.items[search_articles.offset:search_articles.next:]:
+        for item in search_articles.items[search_articles.offset:search_articles.next or None]:
             # print(item)
             if (item.abstract is not None) and (len(item.externalIds) > 0):
                 keys = item.externalIds.keys()
@@ -35,12 +36,12 @@ def populate_article_df(search_articles, search_limit, search_crop):
                        "URL": item.url,
                        "Year": item.year,
                        "Title": item.title,
-                       "Abstract": preprocessing.normalize.whitespace(item.abstract)}
+                       "Abstract": normalize(item.abstract)}
                 data_list.append(row)
             else:
                 num_of_skipped_records = num_of_skipped_records + 1
 
-        if search_limit > search_articles.next and search_articles.next != 0:
+        if search_limit > search_articles.next != 0:
             search_articles.next_page()
         else:
             break
@@ -51,15 +52,35 @@ def populate_article_df(search_articles, search_limit, search_crop):
     return pd.DataFrame.from_records(data_list)
 
 
-# %% add search parameters
-searchCrop = "Test"
-searchString = 'Blueberry and Banana Consumption Mitigate Arachidonic'
+# define a normalization function
+def normalize(text):
+    original_text_remove = text
+    # join words split by a hyphen or line break
+    text = preprocessing.normalize.hyphenated_words(text)
 
+    # remove any unnecessary white spaces
+    text = preprocessing.normalize.whitespace(text)
+
+    # Replace three or more consecutive line breaks (accounting for spaces) with two
+    text = re.sub(r'((\r\n|\r|\n)\s*){3,}', '\n\n', text)
+
+    # subsitute fancy quatation marks with an ASCII equivalent
+    text = preprocessing.normalize.quotation_marks(text)
+    # normalize unicode characters in text into canonical forms
+    text = preprocessing.normalize.unicode(text)
+    # remove any accents character in text by replacing them with ASCII equivalents or removing them entirely
+    text = preprocessing.remove.accents(text)
+
+    return text
+
+# %% add search parameters
+searchCrop = "Cassava"
+searchString = "First report of Cassava"
 searchFields = ['url', 'externalIds', 'year', 'title', 'abstract']
 # searchLimit ideally should be multiple of pagesize and > than pagesize
 # max pagesize is 100
-pageSize = 10
-searchLimit = 50
+pageSize = 100
+searchLimit = 500
 
 # %% search for the papers
 print("searching for the papers...")
