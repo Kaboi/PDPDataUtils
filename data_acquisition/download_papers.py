@@ -21,8 +21,8 @@ def populate_article_df(search_articles, search_limit, page_size, search_crop):
     # create dataframe
     num_of_skipped_records = 0
     data_list = list()
-    if page_size > 10:
-        page_size = 50
+    if page_size > 100:
+        page_size = 100
 
     # -(a // -b) for ceil division rather than floor
     display_counter: int = -((search_articles.total if search_limit > search_articles.total else search_limit) // -page_size)
@@ -100,8 +100,8 @@ def normalize(text):
     return text
 
 # %% add search parameters
-searchCrop = "cassava_3"
-searchString = 'manihot esculenta disease'
+searchCrop = "potatosp_1"
+searchString = 'first report potato'
 searchFields = ['url', 'externalIds', 'year', 'title', 'abstract']
 # searchLimit ideally should be multiple of pagesize and > than pagesize
 # max pagesize is 100
