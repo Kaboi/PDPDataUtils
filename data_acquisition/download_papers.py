@@ -12,6 +12,7 @@ def search_semantic_scholar(search, sfields, page_size):
         page_size = 100
 
     scholar = SemanticScholar()
+    # results = scholar.search_paper(search, fields=sfields, limit=page_size, publication_types=["JournalArticle"])
     results = scholar.search_paper(search, fields=sfields, limit=page_size)
     return results
 
@@ -20,8 +21,8 @@ def populate_article_df(search_articles, search_limit, page_size, search_crop):
     # create dataframe
     num_of_skipped_records = 0
     data_list = list()
-    if page_size > 100:
-        page_size = 100
+    if page_size > 10:
+        page_size = 50
 
     # -(a // -b) for ceil division rather than floor
     display_counter: int = -((search_articles.total if search_limit > search_articles.total else search_limit) // -page_size)
@@ -99,8 +100,8 @@ def normalize(text):
     return text
 
 # %% add search parameters
-searchCrop = "Cassava"
-searchString = "First report of Cassava"
+searchCrop = "cassava_3"
+searchString = 'manihot esculenta disease'
 searchFields = ['url', 'externalIds', 'year', 'title', 'abstract']
 # searchLimit ideally should be multiple of pagesize and > than pagesize
 # max pagesize is 100
