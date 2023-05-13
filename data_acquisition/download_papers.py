@@ -1,6 +1,7 @@
 # %% Load libraries
 import pandas as pd
 from semanticscholar import SemanticScholar
+from textacy import preprocessing
 
 
 # %% functions
@@ -34,12 +35,12 @@ def populate_article_df(search_articles, search_limit, search_crop):
                        "URL": item.url,
                        "Year": item.year,
                        "Title": item.title,
-                       "Abstract": item.abstract}
+                       "Abstract": preprocessing.normalize.whitespace(item.abstract)}
                 data_list.append(row)
             else:
                 num_of_skipped_records = num_of_skipped_records + 1
 
-        if search_limit > search_articles.next:
+        if search_limit > search_articles.next and search_articles.next != 0:
             search_articles.next_page()
         else:
             break
@@ -51,8 +52,9 @@ def populate_article_df(search_articles, search_limit, search_crop):
 
 
 # %% add search parameters
-searchCrop = "Cassava"
-searchString = 'First Report of Cassava'
+searchCrop = "Test"
+searchString = 'Blueberry and Banana Consumption Mitigate Arachidonic'
+
 searchFields = ['url', 'externalIds', 'year', 'title', 'abstract']
 # searchLimit ideally should be multiple of pagesize and > than pagesize
 # max pagesize is 100
