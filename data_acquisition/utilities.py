@@ -14,7 +14,7 @@ def normalize_text(text):
     # Replace three or more consecutive line breaks (accounting for spaces) with two
     text = re.sub(r'((\r\n|\r|\n)\s*){3,}', '\n\n', text)
 
-    # subsitute fancy quatation marks with an ASCII equivalent
+    # substitute fancy quotation marks with an ASCII equivalent
     text = preprocessing.normalize.quotation_marks(text)
     # normalize unicode characters in text into canonical forms
     text = preprocessing.normalize.unicode(text)

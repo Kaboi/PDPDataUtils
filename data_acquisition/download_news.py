@@ -7,6 +7,7 @@ from newspaper import Config
 import pandas as pd
 import nltk
 from tqdm import tqdm
+from data_acquisition.utilities import normalize_text as normalize
 
 
 # %% functions
@@ -59,7 +60,7 @@ def populate_def_df(news_items_df, search_crop, config):
                    "URL": row['link'],
                    "Title": row['title'],
                    "Summary": article.summary,
-                   "Text": article.text,
+                   "Text": normalize(article.text),
                    "Keywords": article.keywords}
             data_list.append(row)
         except:
@@ -71,7 +72,7 @@ def populate_def_df(news_items_df, search_crop, config):
 # %% add search parameters
 searchCrop = "SweetPotato"
 searchString = 'p"Sweet potato" or Sweetpotato crop disease'
-startDate = '01/01/2010'
+startDate = '01/01/2009'
 endDate = '16/01/2023'
 pageSize = 30
 

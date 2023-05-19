@@ -2,7 +2,7 @@
 import pandas as pd
 from semanticscholar import SemanticScholar
 from tqdm import tqdm
-from data_acquisition.utilities import normalize_text
+from data_acquisition.utilities import normalize_text as normalize
 
 
 # %% functions
@@ -52,7 +52,7 @@ def populate_article_df(search_articles, search_limit, page_size, search_crop):
                        "URL": item.url,
                        "Year": item.year,
                        "Title": item.title,
-                       "Abstract": normalize_text(item.abstract)}
+                       "Abstract": normalize(item.abstract)}
                 data_list.append(row)
             else:
                 num_of_skipped_records = num_of_skipped_records + 1
