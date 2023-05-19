@@ -1,9 +1,8 @@
 # %% Load libraries
-import re
 import pandas as pd
 from semanticscholar import SemanticScholar
-from textacy import preprocessing
 from tqdm import tqdm
+from data_acquisition.utilities import normalize_text
 
 
 # %% functions
@@ -53,7 +52,7 @@ def populate_article_df(search_articles, search_limit, page_size, search_crop):
                        "URL": item.url,
                        "Year": item.year,
                        "Title": item.title,
-                       "Abstract": normalize(item.abstract)}
+                       "Abstract": normalize_text(item.abstract)}
                 data_list.append(row)
             else:
                 num_of_skipped_records = num_of_skipped_records + 1
@@ -78,26 +77,7 @@ def populate_article_df(search_articles, search_limit, page_size, search_crop):
     return pd.DataFrame.from_records(data_list)
 
 
-# define a normalization function
-def normalize(text):
-    original_text_remove = text
-    # join words split by a hyphen or line break
-    text = preprocessing.normalize.hyphenated_words(text)
 
-    # remove any unnecessary white spaces
-    text = preprocessing.normalize.whitespace(text)
-
-    # Replace three or more consecutive line breaks (accounting for spaces) with two
-    text = re.sub(r'((\r\n|\r|\n)\s*){3,}', '\n\n', text)
-
-    # subsitute fancy quatation marks with an ASCII equivalent
-    text = preprocessing.normalize.quotation_marks(text)
-    # normalize unicode characters in text into canonical forms
-    text = preprocessing.normalize.unicode(text)
-    # remove any accents character in text by replacing them with ASCII equivalents or removing them entirely
-    text = preprocessing.remove.accents(text)
-
-    return text
 
 # %% add search parameters
 searchCrop = "potatosp_1"
