@@ -2,7 +2,7 @@
 import pandas as pd
 from semanticscholar import SemanticScholar
 from tqdm import tqdm
-from data_acquisition.utilities import normalize_text as normalize
+from utilities import normalize_text as normalize
 
 
 # %% functions

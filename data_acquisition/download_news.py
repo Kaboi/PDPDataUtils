@@ -7,7 +7,7 @@ from newspaper import Config
 import pandas as pd
 import nltk
 from tqdm import tqdm
-from data_acquisition.utilities import normalize_text as normalize
+from utilities import normalize_text as normalize
 
 
 # %% functions
