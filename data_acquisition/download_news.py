@@ -70,8 +70,8 @@ def populate_def_df(news_items_df, search_crop, config):
 
 
 # %% add search parameters
-searchCrop = "SweetPotato"
-searchString = 'p"Sweet potato" or Sweetpotato crop disease'
+searchCrop = "Banana Plantain"
+searchString = 'banana or plantain crop disease'
 startDate = '01/01/2009'
 endDate = '16/01/2023'
 pageSize = 30
@@ -80,7 +80,7 @@ pageSize = 30
 search_config = initial_config()
 
 # %% search for the papers
-print("searching for news...")
+print("searching for ", searchCrop, " news...")
 news_items = search_google_news(searchString, startDate, endDate, pageSize)
 print("search complete.")
 
