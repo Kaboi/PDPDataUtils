@@ -32,7 +32,7 @@ def search_google_news(search, search_start_date, search_end_date, no_pages):
     df = None
     googlenews = GoogleNews(start=search_start_date, end=search_end_date, lang='en')
     googlenews.enableException(True)
-    error_count = 0
+    # error_count = 0
     for i in tqdm(range(1, no_pages+1), desc="Getting news pages", unit="pages", position=0, leave=True, ncols=100,
                   bar_format='{l_bar}{bar}|{n_fmt}/{total_fmt}'):
 
@@ -58,7 +58,8 @@ def search_google_news(search, search_start_date, search_end_date, no_pages):
 
             # add time.sleep to delay the requests for getpage(i)
             time.sleep(5)
-        except Exception as e:
+        # except Exception as e:
+        except Exception:
             tqdm.write("It seems the pages are over, exiting...")
             break
             # print(type(e))
@@ -90,7 +91,7 @@ def populate_def_df(news_items_df, search_crop):
                        "Text": normalize(article.text),
                        "Keywords": article.keywords}
                 data_list.append(row)
-        except:
+        except Exception:
             print("Error getting article: ", row['link'])
             continue
     return pd.DataFrame.from_records(data_list)
