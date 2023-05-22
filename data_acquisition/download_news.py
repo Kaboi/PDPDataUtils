@@ -80,7 +80,7 @@ pageSize = 30
 search_config = initial_config()
 
 # %% search for the papers
-print("searching for ", searchCrop, " news...")
+print("searching for news relating to ", searchCrop, "...")
 news_items = search_google_news(searchString, startDate, endDate, pageSize)
 print("search complete.")
 
