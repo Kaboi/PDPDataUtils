@@ -29,14 +29,21 @@ def search_google_news(search, search_start_date, search_end_date, no_pages):
                   bar_format='{l_bar}{bar}|{n_fmt}/{total_fmt}'):
         if i == 1:
             googlenews.search(search)
+            result = googlenews.result()
         else:
-            googlenews.getpage(i)
-        result = googlenews.result()
-        if len(result) == 0:
+            result = googlenews.page_at(i)
+
+        if result is None:
+            print("No more results returned")
+            break
+        elif len(result) == 0:
             print("No more news found")
             break
         else:
-            df = pd.DataFrame(result)
+            if df is None:
+                df = pd.DataFrame(result)
+            else:
+                df = pd.concat([df, pd.DataFrame(result)], ignore_index=True)
         time.sleep(5)
 
     return df if df is not None else None
@@ -72,9 +79,9 @@ def populate_def_df(news_items_df, search_crop, config):
 # %% add search parameters
 searchCrop = "Banana Plantain"
 searchString = 'banana or plantain crop disease'
-startDate = '01/01/2009'
+startDate = '01/01/2002'
 endDate = '16/01/2023'
-pageSize = 30
+pageSize = 50
 
 # %% initialize
 search_config = initial_config()
