@@ -10,4 +10,4 @@ tqdm~=4.65.0
 semanticscholar~=0.4.1
 transformers~=4.30.2
 Newspaper3k~=0.2.8
-
+fake-useragent~=0.1.3
