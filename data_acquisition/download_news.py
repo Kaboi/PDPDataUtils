@@ -123,7 +123,7 @@ def main(search_crop, search_string, start_date, end_date, page_size):
     initial_config()
 
     # search for the papers
-    print("searching for news relating to ", search_crop, "...")
+    print("\nsearching for news relating to ", search_crop, "...\n")
     news_items = search_google_news(search_string, start_date, end_date, page_size)
     print("search complete.")
 
