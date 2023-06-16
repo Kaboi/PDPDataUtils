@@ -127,7 +127,7 @@ if __name__ == "__main__":
                                                                            'document length')
     args = parser.parse_args()
 
-    main(args.file_path, args.model, args.min_length)
+    main(args.file_path, args.spacy_model, args.min_length)
 
 
 
