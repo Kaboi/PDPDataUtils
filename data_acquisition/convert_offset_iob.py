@@ -5,16 +5,16 @@ import spacy
 from tqdm import tqdm
 
 
-def generate_output_filename(in_file_path):
-    file_name = os.path.splitext(os.path.basename(in_file_path))[0]
-    dir_path = os.path.dirname(in_file_path)
+def generate_output_filename(in_file_paths):
+    file_name = os.path.splitext(os.path.basename(in_file_paths[0]))[0]
+    dir_path = os.path.dirname(in_file_paths[0])
     return os.path.join(dir_path, file_name + "-output-iob-tags.tsv")
 
 
 # TODO combine with generate_output_filename
-def generate_meta_filename(in_file_path):
-    file_name = os.path.splitext(os.path.basename(in_file_path))[0]
-    dir_path = os.path.dirname(in_file_path)
+def generate_meta_filename(in_file_paths):
+    file_name = os.path.splitext(os.path.basename(in_file_paths[0]))[0]
+    dir_path = os.path.dirname(in_file_paths[0])
     return os.path.join(dir_path, file_name + "-output-iob-tags-meta.txt")
 
 
@@ -82,13 +82,16 @@ def split_sentences(lnlp, anns, min_length):
     return new_anns
 
 
-def load_annotations(in_file_path):
-    with open(in_file_path, "r") as f:
-        anns = [json.loads(line) for line in f]
+def load_annotations(in_file_paths):
+    anns = []
+    for in_file_path in in_file_paths:
+        with open(in_file_path, "r") as f:
+            anns.extend([json.loads(line) for line in f])
+
     return anns
 
 
-def convert_to_iob_save(lnlp, anns, in_file_path, out_file_path, meta_file_path):
+def convert_to_iob_save(lnlp, anns, in_file_paths, out_file_path, meta_file_path):
     max_text_sequence_length = 0
     total_number_of_tokens = 0
     total_number_of_annotated_documents = 0
@@ -114,23 +117,25 @@ def convert_to_iob_save(lnlp, anns, in_file_path, out_file_path, meta_file_path)
 
     # Write the metadata to a file
     with open(meta_file_path, "w") as meta_file:
-        meta_file.write(f"Input file: {in_file_path}\n")
+        for in_file_path in in_file_paths:
+            meta_file.write(f"Input file: {in_file_path}\n")
         meta_file.write(f"Output file: {out_file_path}\n")
         meta_file.write(f"Total number of annotation documents: {total_number_of_annotated_documents}\n")
         meta_file.write(f"Total number of tokens: {total_number_of_tokens}\n")
         meta_file.write(f"Longest sequence of tokens: {max_text_sequence_length}\n")
 
 
-def main(file_path, language_model="en_core_web_lg", min_length=None):
-    if not os.path.exists(file_path):
-        print(f"Error: File {file_path} does not exist.")
-        return
+def main(file_paths, language_model="en_core_web_lg", min_length=None):
+    for file_path in file_paths:
+        if not os.path.exists(file_path):
+            print(f"Error: File {file_path} does not exist.")
+            return
 
-    file_output_path = generate_output_filename(file_path)
-    file_meta_path = generate_meta_filename(file_path)
-
-    annotations = load_annotations(file_path)
+    annotations = load_annotations(file_paths)
     nlp = spacy.load(language_model, disable=["parser", "ner", "textcat"])
+
+    file_output_path = generate_output_filename(file_paths)
+    file_meta_path = generate_meta_filename(file_paths)
 
     if min_length:
         if not nlp.has_pipe("sentencizer"):
@@ -139,7 +144,7 @@ def main(file_path, language_model="en_core_web_lg", min_length=None):
         annotations = split_sentences(nlp, annotations, min_length=min_length)
 
     # TODO - Do this more elegantly
-    convert_to_iob_save(nlp, annotations, file_path, file_output_path, file_meta_path)
+    convert_to_iob_save(nlp, annotations, file_paths, file_output_path, file_meta_path)
 
 
 # # %% Testing
@@ -163,10 +168,11 @@ def main(file_path, language_model="en_core_web_lg", min_length=None):
 # %% Main
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Convert jsonl annotations to IOB format.')
-    parser.add_argument('-f', '--file_path', required=True, help='Input file name with path.')
+    parser.add_argument('-f', '--file_paths', nargs='+', required=True, help='Input file names, can be multiple space'
+                                                                             'separated files.')
     parser.add_argument('-sm', '--spacy_model', default="en_core_web_lg", help='Spacy language model.')
     parser.add_argument('-l', '--min_length', default=None, type=int, help='Minimum sentence length, default is the '
                                                                            'document length')
     args = parser.parse_args()
 
-    main(args.file_path, args.spacy_model, args.min_length)
+    main(args.file_paths, args.spacy_model, args.min_length)
