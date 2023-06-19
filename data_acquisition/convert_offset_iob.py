@@ -97,9 +97,9 @@ def convert_to_iob(lnlp, txt, spns, doc_hash=None):
             if tkn.text.count("\n") > 1:
                 tqdm.write(f"Found multiple newline characters in _input_hash {doc_hash} text at position {tkn.idx}.")
 
-            # Add each newline character to iob_tgs with an 'O' tag
+            # Add each newline character as a space to iob_tgs with an 'O' tag
             for _ in tkn.text:
-                iob_tgs.append(('', 'O'))
+                iob_tgs.append((' ', 'O'))
             continue
 
         if not tg:
@@ -114,8 +114,10 @@ def convert_to_iob_save(lnlp, anns, in_file_paths, out_file_path, meta_file_path
     if isinstance(anns, tuple):
         data_types = ["train", "test", "validate"]
         return tuple(convert_to_iob_save(lnlp, group, in_file_paths,
-                                         f"{os.path.splitext(out_file_path)[0]}_{data_types[i]}{os.path.splitext(out_file_path)[1]}",
-                                         f"{os.path.splitext(meta_file_path)[0]}_{data_types[i]}{os.path.splitext(meta_file_path)[1]}",
+                                         f"{os.path.splitext(out_file_path)[0]}_{data_types[i]}"
+                                         f"{os.path.splitext(out_file_path)[1]}",
+                                         f"{os.path.splitext(meta_file_path)[0]}_{data_types[i]}"
+                                         f"{os.path.splitext(meta_file_path)[1]}",
                                          n_docs[i]) for i, group in enumerate(anns))
     else:
         max_text_sequence_length = 0
