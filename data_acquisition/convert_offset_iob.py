@@ -10,15 +10,15 @@ def generate_output_filename(in_file_paths, min_sentence_length):
     file_name = os.path.splitext(os.path.basename(in_file_paths[0]))[0]
     dir_path = os.path.dirname(in_file_paths[0])
     return os.path.join(dir_path, file_name + "-output-iob-tags-" +
-                        (str(min_sentence_length) if min_sentence_length else "full_doc") + ".tsv")
+                        (str(min_sentence_length) if min_sentence_length else "full_doc") + ".txt")
 
 
 # TODO combine with generate_output_filename
 def generate_meta_filename(in_file_paths, min_sentence_length):
     file_name = os.path.splitext(os.path.basename(in_file_paths[0]))[0]
     dir_path = os.path.dirname(in_file_paths[0])
-    return os.path.join(dir_path, file_name + "-output-iob-tags-meta-" +
-                        (str(min_sentence_length) if min_sentence_length else "full_doc") + ".txt")
+    return os.path.join(dir_path, file_name + "-output-iob-tags-" +
+                        (str(min_sentence_length) if min_sentence_length else "full_doc") + ".meta.txt")
 
 
 def adjust_annotation_spans(new_sentence_start, anns):
