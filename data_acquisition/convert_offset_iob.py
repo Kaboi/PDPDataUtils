@@ -18,7 +18,7 @@ def generate_meta_filename(in_file_paths, min_sentence_length):
     file_name = os.path.splitext(os.path.basename(in_file_paths[0]))[0]
     dir_path = os.path.dirname(in_file_paths[0])
     return os.path.join(dir_path, file_name + "-output-iob-tags-" +
-                        (str(min_sentence_length) if min_sentence_length else "full-doc") + "-meta.txt")
+                        (str(min_sentence_length) if min_sentence_length else "full_doc") + ".meta.txt")
 
 
 def adjust_annotation_spans(new_sentence_start, anns):
@@ -114,9 +114,9 @@ def convert_to_iob_save(lnlp, anns, in_file_paths, out_file_path, meta_file_path
     if isinstance(anns, tuple):
         data_types = ["train", "test", "validate"]
         return tuple(convert_to_iob_save(lnlp, group, in_file_paths,
-                                         f"{os.path.splitext(out_file_path)[0]}-{data_types[i]}"
+                                         f"{os.path.splitext(out_file_path)[0]}_{data_types[i]}"
                                          f"{os.path.splitext(out_file_path)[1]}",
-                                         f"{os.path.splitext(meta_file_path)[0]}-{data_types[i]}"
+                                         f"{os.path.splitext(meta_file_path)[0]}_{data_types[i]}"
                                          f"{os.path.splitext(meta_file_path)[1]}",
                                          n_docs[i]) for i, group in enumerate(anns))
     else:
