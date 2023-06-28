@@ -98,8 +98,11 @@ def convert_to_iob(lnlp, txt, spns, doc_hash=None):
                 tqdm.write(f"Found multiple newline characters in _input_hash {doc_hash} text at position {tkn.idx}.")
 
             # Add each newline character as a space to iob_tgs with an 'O' tag
-            for _ in tkn.text:
-                iob_tgs.append((' ', 'O'))
+            # for _ in tkn.text:
+            #     iob_tgs.append((' ', 'O'))
+
+            # add only one newline character as a space to iob_tgs with an 'O' tag
+            iob_tgs.append((' ', 'O'))
             continue
 
         if not tg:
@@ -191,9 +194,9 @@ def main(file_paths, min_length=None, split=False, language_model="en_core_web_l
     convert_to_iob_save(nlp, annotations, file_paths, file_output_path, file_meta_path, num_of_docs)
 
 
-# # %% Testing
+# %% Testing
 # # Edit paths here
-# input_file_path = "/home/leroy/Dev/Code/PDPAnnotationDataUtils/annotated_data/tests-mine_2.jsonl"
+# input_file_path = "/home/leroy/Dev/Code/PDPAnnotationDataUtils/annotated_data/tests-mine_4.jsonl"
 # # in_file = "ciat_ner_v2_combined_rev_20230106.jsonl"
 #
 # # Set the model to use or default to spacy
@@ -204,10 +207,11 @@ def main(file_paths, min_length=None, split=False, language_model="en_core_web_l
 # # transformer_model = "roberta-base"
 # # transformer_model = "allenai/scibert_scivocab_uncased"
 # # transformer_model = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
-#
-# main(input_file_path)
+# filepaths = []
+# filepaths.append(input_file_path)
+# main(filepaths)
 # exit()
-
+#
 
 # %% Main
 if __name__ == "__main__":
