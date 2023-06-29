@@ -113,10 +113,10 @@ def convert_to_iob(lnlp, txt, spns, doc_hash=None):
     return iob_tgs
 
 
-def convert_to_iob_save(lnlp, anns, in_file_paths, out_file_path, meta_file_path, n_docs):
+def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_file_path, meta_file_path, n_docs):
     if isinstance(anns, tuple):
         data_types = ["train", "test", "validate"]
-        return tuple(convert_to_iob_save(lnlp, group, in_file_paths,
+        return tuple(convert_to_iob_save(lnlp, group, maximum_sentence_length, in_file_paths,
                                          f"{os.path.splitext(out_file_path)[0]}_{data_types[i]}"
                                          f"{os.path.splitext(out_file_path)[1]}",
                                          f"{os.path.splitext(meta_file_path)[0]}_{data_types[i]}"
@@ -132,12 +132,30 @@ def convert_to_iob_save(lnlp, anns, in_file_paths, out_file_path, meta_file_path
                 spans = annotation["spans"]
                 input_hash = annotation["_input_hash"]
                 iob_tags = convert_to_iob(lnlp, text, spans, input_hash)
+
+                tokens_in_current_sequence = 0
                 for token, tag in iob_tags:
                     output_file.write(f"{token}\t{tag}\n")
                     total_number_of_tokens += 1
-                output_file.write("\n")
-                if len(iob_tags) > max_text_sequence_length:
-                    max_text_sequence_length = len(iob_tags)
+                    tokens_in_current_sequence += 1
+
+                    # Check if a break should be added
+                    if maximum_sentence_length is not None and tokens_in_current_sequence >= maximum_sentence_length:
+                        if (token.isspace() or token in [",", "."]) and tag == "O":
+                            output_file.write("\n")
+
+                            # Update max_text_sequence_length
+                            if tokens_in_current_sequence > max_text_sequence_length:
+                                max_text_sequence_length = tokens_in_current_sequence
+
+                            tokens_in_current_sequence = 0
+
+                # Separate different annotations with a newline
+                if tokens_in_current_sequence > 0:
+                    output_file.write("\n")
+                # Update max_text_sequence_length
+                if tokens_in_current_sequence > max_text_sequence_length:
+                    max_text_sequence_length = tokens_in_current_sequence
 
         # Write the metadata to a file
         with open(meta_file_path, "w") as meta_file:
@@ -169,7 +187,10 @@ def split_data_into_train_val_test(annotations, split_ratios=(0.7, 0.15, 0.15), 
     return (train_annotations, validation_annotations, test_annotations), (train_size, validation_size, test_size)
 
 
-def main(file_paths, min_length=None, split=False, language_model="en_core_web_lg"):
+def main(file_paths, min_length=None, max_length=None, split=False, language_model="en_core_web_lg"):
+    if min_length and not max_length:
+        max_length = min_length
+
     nlp = spacy.load(language_model, disable=["parser", "ner", "textcat"])
     for file_path in file_paths:
         if not os.path.exists(file_path):
@@ -180,21 +201,24 @@ def main(file_paths, min_length=None, split=False, language_model="en_core_web_l
     annotations = filter_annotations(annotations)
 
     if split:
+        print(f"Splitting data into train, validation and test sets...")
         annotations, num_of_docs = split_data_into_train_val_test(annotations)
 
     if min_length:
         if not nlp.has_pipe("sentencizer"):
             nlp.add_pipe("sentencizer")
 
+        print(f"Splitting into sentences with a minimum length of {min_length}...")
         annotations = split_sentences(nlp, annotations, min_length=min_length)
 
     # TODO - Do this more elegantly
     file_output_path = generate_output_filename(file_paths, min_length)
     file_meta_path = generate_meta_filename(file_paths, min_length)
-    convert_to_iob_save(nlp, annotations, file_paths, file_output_path, file_meta_path, num_of_docs)
+    print(f"Converting to IOB format and saving...")
+    convert_to_iob_save(nlp, annotations, max_length, file_paths, file_output_path, file_meta_path, num_of_docs)
 
 
-# %% Testing
+# %% Quick test runs
 # # Edit paths here
 # input_file_path = "/home/leroy/Dev/Code/PDPAnnotationDataUtils/annotated_data/tests-mine_4.jsonl"
 # # in_file = "ciat_ner_v2_combined_rev_20230106.jsonl"
@@ -217,9 +241,11 @@ def main(file_paths, min_length=None, split=False, language_model="en_core_web_l
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Convert jsonl annotations to IOB format.')
     parser.add_argument('-f', '--file_paths', nargs='+', required=True, help='Input file names, can be multiple space'
-                                                                             'separated files.')
-    parser.add_argument('-l', '--min_length', default=None, type=int, help='Minimum sentence length, default is the '
-                                                                           'document length')
+                                                                             ' separated files.')
+    parser.add_argument('-min', '--min_length', default=None, type=int, help='Minimum sentence length, default is the '
+                                                                             'document length')
+    parser.add_argument('-max', '--max_length', default=None, type=int, help='Maximum ballpark sentence length, default'
+                                                                             ' is the document length')
     # add an argument for splitting the data into train, validation and test
     parser.add_argument('-s', '--split', default=False, action='store_true', help='Split the data into train, test '
                                                                                   'and validation sets.')
@@ -227,4 +253,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args.file_paths, args.min_length, args.split, args.spacy_model)
+    # Assert that min_length is less than max_length
+    assert args.min_length is None or args.max_length is None or args.min_length <= args.max_length, \
+        "min_length must be less than or equal to max_length"
+
+    main(args.file_paths, args.min_length, args.max_length, args.split, args.spacy_model)
+
