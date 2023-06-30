@@ -4,13 +4,14 @@ import os
 import spacy
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
+import csv
 
 
 def generate_output_filename(in_file_paths, min_sentence_length):
     file_name = os.path.splitext(os.path.basename(in_file_paths[0]))[0]
     dir_path = os.path.dirname(in_file_paths[0])
     return os.path.join(dir_path, file_name + "-output-iob-tags-" +
-                        (str(min_sentence_length) if min_sentence_length else "full_doc") + ".txt")
+                        (str(min_sentence_length) if min_sentence_length else "full_doc") + ".csv")
 
 
 # TODO combine with generate_output_filename
@@ -126,7 +127,8 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
         max_text_sequence_length = 0
         total_number_of_tokens = 0
 
-        with open(out_file_path, "w") as output_file:
+        with open(out_file_path, "w", newline='') as output_file:
+            csv_writer = csv.writer(output_file)
             for annotation in tqdm(anns, desc="Processing annotations"):
                 text = annotation["text"]
                 spans = annotation["spans"]
@@ -135,14 +137,14 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
 
                 tokens_in_current_sequence = 0
                 for token, tag in iob_tags:
-                    output_file.write(f"{token}\t{tag}\n")
+                    csv_writer.writerow([token, tag])
                     total_number_of_tokens += 1
                     tokens_in_current_sequence += 1
 
                     # Check if a break should be added
                     if maximum_sentence_length is not None and tokens_in_current_sequence >= maximum_sentence_length:
                         if (token.isspace() or token in [",", "."]) and tag == "O":
-                            output_file.write("\n")
+                            csv_writer.writerow([])
 
                             # Update max_text_sequence_length
                             if tokens_in_current_sequence > max_text_sequence_length:
@@ -152,7 +154,7 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
 
                 # Separate different annotations with a newline
                 if tokens_in_current_sequence > 0:
-                    output_file.write("\n")
+                    csv_writer.writerow([])
                 # Update max_text_sequence_length
                 if tokens_in_current_sequence > max_text_sequence_length:
                     max_text_sequence_length = tokens_in_current_sequence
@@ -165,6 +167,60 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
             meta_file.write(f"Total number of annotation documents: {n_docs}\n")
             meta_file.write(f"Total number of tokens: {total_number_of_tokens}\n")
             meta_file.write(f"Longest sequence of tokens: {max_text_sequence_length}\n")
+
+
+# def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_file_path, meta_file_path, n_docs):
+#     if isinstance(anns, tuple):
+#         data_types = ["train", "test", "validate"]
+#         return tuple(convert_to_iob_save(lnlp, group, maximum_sentence_length, in_file_paths,
+#                                          f"{os.path.splitext(out_file_path)[0]}_{data_types[i]}"
+#                                          f"{os.path.splitext(out_file_path)[1]}",
+#                                          f"{os.path.splitext(meta_file_path)[0]}_{data_types[i]}"
+#                                          f"{os.path.splitext(meta_file_path)[1]}",
+#                                          n_docs[i]) for i, group in enumerate(anns))
+#     else:
+#         max_text_sequence_length = 0
+#         total_number_of_tokens = 0
+#
+#         with open(out_file_path, "w") as output_file:
+#             for annotation in tqdm(anns, desc="Processing annotations"):
+#                 text = annotation["text"]
+#                 spans = annotation["spans"]
+#                 input_hash = annotation["_input_hash"]
+#                 iob_tags = convert_to_iob(lnlp, text, spans, input_hash)
+#
+#                 tokens_in_current_sequence = 0
+#                 for token, tag in iob_tags:
+#                     output_file.write(f"{token}\t{tag}\n")
+#                     total_number_of_tokens += 1
+#                     tokens_in_current_sequence += 1
+#
+#                     # Check if a break should be added
+#                     if maximum_sentence_length is not None and tokens_in_current_sequence >= maximum_sentence_length:
+#                         if (token.isspace() or token in [",", "."]) and tag == "O":
+#                             output_file.write("\n")
+#
+#                             # Update max_text_sequence_length
+#                             if tokens_in_current_sequence > max_text_sequence_length:
+#                                 max_text_sequence_length = tokens_in_current_sequence
+#
+#                             tokens_in_current_sequence = 0
+#
+#                 # Separate different annotations with a newline
+#                 if tokens_in_current_sequence > 0:
+#                     output_file.write("\n")
+#                 # Update max_text_sequence_length
+#                 if tokens_in_current_sequence > max_text_sequence_length:
+#                     max_text_sequence_length = tokens_in_current_sequence
+#
+#         # Write the metadata to a file
+#         with open(meta_file_path, "w") as meta_file:
+#             for in_file_path in in_file_paths:
+#                 meta_file.write(f"Input file: {in_file_path}\n")
+#             meta_file.write(f"Output file: {out_file_path}\n")
+#             meta_file.write(f"Total number of annotation documents: {n_docs}\n")
+#             meta_file.write(f"Total number of tokens: {total_number_of_tokens}\n")
+#             meta_file.write(f"Longest sequence of tokens: {max_text_sequence_length}\n")
 
 
 def split_data_into_train_val_test(annotations, split_ratios=(0.7, 0.15, 0.15), random_seed=777):
