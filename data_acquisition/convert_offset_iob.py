@@ -130,7 +130,11 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
 
         with open(out_file_path, "w", newline='') as output_file:
             # Use the provided separator
-            csv_writer = csv.writer(output_file, delimiter=separator)
+            if separator == ',':
+                csv_writer = csv.writer(output_file, delimiter=separator, quoting=csv.QUOTE_MINIMAL)
+            else:
+                csv_writer = csv.writer(output_file, delimiter=separator, quoting=csv.QUOTE_NONE, quotechar='',
+                                        escapechar='\\', lineterminator='\n')
 
             for annotation in tqdm(anns, desc="Processing annotations"):
                 text = annotation["text"]
@@ -312,9 +316,17 @@ if __name__ == "__main__":
                                                                                   'and validation sets.')
     parser.add_argument('-sm', '--spacy_model', default="en_core_web_lg", help='Spacy language model.')
     # add an argument for the separator
-    parser.add_argument('-sep', '--separator', default=',', help='Separator for the output file. Default is comma.')
+    parser.add_argument('-sep', '--separator', default=',', help='Separator for the output file. Allowed values are ","'
+                                                                 ' (comma), \\t (tab) and \s (space) Default is comma.')
 
     args = parser.parse_args()
+
+    if args.separator == '\\t':
+        args.separator = '\t'
+    elif args.separator == '\\s':
+        args.separator = ' '
+
+    assert args.separator in [',', '\t', ' '], "Separator must be either a comma, tab (\\t), or space (\\s)"
 
     # Assert that min_length is less than max_length
     assert args.min_length is None or args.max_length is None or args.min_length <= args.max_length, \
