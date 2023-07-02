@@ -114,7 +114,8 @@ def convert_to_iob(lnlp, txt, spns, doc_hash=None):
     return iob_tgs
 
 
-def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_file_path, meta_file_path, n_docs):
+def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_file_path, meta_file_path, n_docs,
+                        separator=','):
     if isinstance(anns, tuple):
         data_types = ["train", "test", "validate"]
         return tuple(convert_to_iob_save(lnlp, group, maximum_sentence_length, in_file_paths,
@@ -122,13 +123,15 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
                                          f"{os.path.splitext(out_file_path)[1]}",
                                          f"{os.path.splitext(meta_file_path)[0]}_{data_types[i]}"
                                          f"{os.path.splitext(meta_file_path)[1]}",
-                                         n_docs[i]) for i, group in enumerate(anns))
+                                         n_docs[i], separator) for i, group in enumerate(anns))
     else:
         max_text_sequence_length = 0
         total_number_of_tokens = 0
 
         with open(out_file_path, "w", newline='') as output_file:
-            csv_writer = csv.writer(output_file)
+            # Use the provided separator
+            csv_writer = csv.writer(output_file, delimiter=separator)
+
             for annotation in tqdm(anns, desc="Processing annotations"):
                 text = annotation["text"]
                 spans = annotation["spans"]
@@ -155,6 +158,7 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
                 # Separate different annotations with a newline
                 if tokens_in_current_sequence > 0:
                     csv_writer.writerow([])
+
                 # Update max_text_sequence_length
                 if tokens_in_current_sequence > max_text_sequence_length:
                     max_text_sequence_length = tokens_in_current_sequence
@@ -243,7 +247,7 @@ def split_data_into_train_val_test(annotations, split_ratios=(0.7, 0.15, 0.15), 
     return (train_annotations, validation_annotations, test_annotations), (train_size, validation_size, test_size)
 
 
-def main(file_paths, min_length=None, max_length=None, split=False, language_model="en_core_web_lg"):
+def main(file_paths, min_length=None, max_length=None, split=False, language_model="en_core_web_lg", separator=','):
     if min_length and not max_length:
         max_length = min_length
 
@@ -271,7 +275,8 @@ def main(file_paths, min_length=None, max_length=None, split=False, language_mod
     file_output_path = generate_output_filename(file_paths, min_length)
     file_meta_path = generate_meta_filename(file_paths, min_length)
     print(f"Converting to IOB format and saving...")
-    convert_to_iob_save(nlp, annotations, max_length, file_paths, file_output_path, file_meta_path, num_of_docs)
+    convert_to_iob_save(nlp, annotations, max_length, file_paths, file_output_path, file_meta_path, num_of_docs,
+                        separator=separator)
 
 
 # %% Quick test runs
@@ -306,6 +311,8 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--split', default=False, action='store_true', help='Split the data into train, test '
                                                                                   'and validation sets.')
     parser.add_argument('-sm', '--spacy_model', default="en_core_web_lg", help='Spacy language model.')
+    # add an argument for the separator
+    parser.add_argument('-sep', '--separator', default=',', help='Separator for the output file. Default is comma.')
 
     args = parser.parse_args()
 
@@ -313,5 +320,5 @@ if __name__ == "__main__":
     assert args.min_length is None or args.max_length is None or args.min_length <= args.max_length, \
         "min_length must be less than or equal to max_length"
 
-    main(args.file_paths, args.min_length, args.max_length, args.split, args.spacy_model)
+    main(args.file_paths, args.min_length, args.max_length, args.split, args.spacy_model, args.separator)
 
