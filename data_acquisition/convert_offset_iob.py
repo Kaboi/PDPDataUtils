@@ -7,18 +7,19 @@ from sklearn.model_selection import train_test_split
 import csv
 from collections import defaultdict
 
-def generate_output_filename(in_file_paths, min_sentence_length):
+
+def generate_output_filename(in_file_paths, max_sentence_length):
     file_name = os.path.splitext(os.path.basename(in_file_paths[0]))[0]
     dir_path = os.path.dirname(in_file_paths[0])
     return os.path.join(dir_path, file_name + "-output-iob-tags-" +
-                        (str(min_sentence_length) if min_sentence_length else "full_doc") + ".txt")
+                        (str(max_sentence_length) if max_sentence_length else "full_doc") + ".txt")
 
 
-def generate_meta_filename(in_file_paths, min_sentence_length):
+def generate_meta_filename(in_file_paths, max_sentence_length):
     file_name = os.path.splitext(os.path.basename(in_file_paths[0]))[0]
     dir_path = os.path.dirname(in_file_paths[0])
     return os.path.join(dir_path, file_name + "-output-iob-tags-" +
-                        (str(min_sentence_length) if min_sentence_length else "full_doc") + ".meta.txt")
+                        (str(max_sentence_length) if max_sentence_length else "full_doc") + ".meta.txt")
 
 
 def adjust_annotation_spans(new_sentence_start, anns):
@@ -313,8 +314,8 @@ def main(file_paths, min_length=None, max_length=None, split=False, language_mod
         annotations = split_sentences(nlp, annotations, min_length=min_length)
 
     # TODO - Do this more elegantly
-    file_output_path = generate_output_filename(file_paths, min_length)
-    file_meta_path = generate_meta_filename(file_paths, min_length)
+    file_output_path = generate_output_filename(file_paths, max_length)
+    file_meta_path = generate_meta_filename(file_paths, max_length)
     print(f"Converting to IOB format and saving...")
     convert_to_iob_save(nlp, annotations, max_length, file_paths, file_output_path, file_meta_path, num_of_docs,
                         separator=separator)
