@@ -115,27 +115,23 @@ def convert_to_iob(lnlp, txt, spns, doc_hash=None):
     return iob_tgs
 
 
-def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_file_path, meta_file_path, n_docs,
-                        separator=','):
+def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_file_path, meta_file_path, n_docs, separator=','):
 
     label_counts = defaultdict(int)
-    combined_label_count = defaultdict(int)
+    combined_label_counts = defaultdict(int)
 
     if isinstance(anns, tuple):
         data_types = ["train", "test", "validate"]
         return tuple(convert_to_iob_save(lnlp, group, maximum_sentence_length, in_file_paths,
-                                         f"{os.path.splitext(out_file_path)[0]}_{data_types[i]}"
-                                         f"{os.path.splitext(out_file_path)[1]}",
-                                         f"{os.path.splitext(meta_file_path)[0]}_{data_types[i]}"
-                                         f"{os.path.splitext(meta_file_path)[1]}",
+                                         f"{os.path.splitext(out_file_path)[0]}_{data_types[i]}{os.path.splitext(out_file_path)[1]}",
+                                         f"{os.path.splitext(meta_file_path)[0]}_{data_types[i]}{os.path.splitext(meta_file_path)[1]}",
                                          n_docs[i], separator) for i, group in enumerate(anns))
     else:
         max_text_sequence_length = 0
         total_number_of_tokens = 0
-        current_combined_label = ""
+        current_combined_label = None
 
         with open(out_file_path, "w", newline='') as output_file:
-            # Use the provided separator
             if separator == ',':
                 csv_writer = csv.writer(output_file, delimiter=separator, quoting=csv.QUOTE_MINIMAL)
             else:
@@ -154,36 +150,25 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
                     total_number_of_tokens += 1
                     tokens_in_current_sequence += 1
 
-                    # Update label counts
+                    label_counts[tag] += 1  # count individual label
+
+                    # for combined labels, consider only B- and I- tags
                     if tag.startswith("B-") or tag.startswith("I-"):
-                        label_counts[tag] += 1
+                        label_name = tag[2:]
+                        combined_label_counts[label_name] += 1
 
-                        if tag == current_combined_label:
-                            combined_label_count[tag] += 1
-                        else:
-                            combined_label_count[current_combined_label] += 1
-                            current_combined_label = tag
-
-                    # Check if a break should be added
                     if maximum_sentence_length is not None and tokens_in_current_sequence >= maximum_sentence_length:
                         if (token.isspace() or token in [",", "."]) and tag == "O":
                             csv_writer.writerow([])
-
-                            # Update max_text_sequence_length
                             if tokens_in_current_sequence > max_text_sequence_length:
                                 max_text_sequence_length = tokens_in_current_sequence
-
                             tokens_in_current_sequence = 0
 
-                # Separate different annotations with a newline
                 if tokens_in_current_sequence > 0:
                     csv_writer.writerow([])
-
-                # Update max_text_sequence_length
                 if tokens_in_current_sequence > max_text_sequence_length:
                     max_text_sequence_length = tokens_in_current_sequence
 
-        # Write the metadata to a file
         with open(meta_file_path, "w") as meta_file:
             for in_file_path in in_file_paths:
                 meta_file.write(f"Input file: {in_file_path}\n")
@@ -196,8 +181,9 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
                 meta_file.write(f"{label}: {count}\n")
 
             meta_file.write("\nCombined Label Counts:\n")
-            for label, count in combined_label_count.items():
+            for label, count in combined_label_counts.items():
                 meta_file.write(f"{label}: {count}\n")
+
 
 
 # def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_file_path, meta_file_path, n_docs):
