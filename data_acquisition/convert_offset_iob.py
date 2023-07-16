@@ -5,7 +5,7 @@ import spacy
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 import csv
-
+from collections import defaultdict
 
 def generate_output_filename(in_file_paths, min_sentence_length):
     file_name = os.path.splitext(os.path.basename(in_file_paths[0]))[0]
@@ -14,7 +14,6 @@ def generate_output_filename(in_file_paths, min_sentence_length):
                         (str(min_sentence_length) if min_sentence_length else "full_doc") + ".txt")
 
 
-# TODO combine with generate_output_filename
 def generate_meta_filename(in_file_paths, min_sentence_length):
     file_name = os.path.splitext(os.path.basename(in_file_paths[0]))[0]
     dir_path = os.path.dirname(in_file_paths[0])
@@ -67,13 +66,15 @@ def load_annotations(in_file_paths):
 # function that gets the annotations and removes all annotations that the answer is not accept
 def filter_annotations(anns):
     filtered_anns = []
+    num_of_docs = 0
     for ann in anns:
         if ann["answer"] == "accept":
             filtered_anns.append(ann)
+            num_of_docs += 1
         else:
             # TODO - add a logger to log exclusion of reject and ignore print an warning message
             print(f"Excluding annotation with _input_hash {ann['_input_hash']} due to answer: {ann['answer']}")
-    return filtered_anns
+    return filtered_anns, num_of_docs
 
 
 def convert_to_iob(lnlp, txt, spns, doc_hash=None):
@@ -116,6 +117,10 @@ def convert_to_iob(lnlp, txt, spns, doc_hash=None):
 
 def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_file_path, meta_file_path, n_docs,
                         separator=','):
+
+    label_counts = defaultdict(int)
+    combined_label_count = defaultdict(int)
+
     if isinstance(anns, tuple):
         data_types = ["train", "test", "validate"]
         return tuple(convert_to_iob_save(lnlp, group, maximum_sentence_length, in_file_paths,
@@ -127,6 +132,7 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
     else:
         max_text_sequence_length = 0
         total_number_of_tokens = 0
+        current_combined_label = ""
 
         with open(out_file_path, "w", newline='') as output_file:
             # Use the provided separator
@@ -147,6 +153,16 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
                     csv_writer.writerow([token, tag])
                     total_number_of_tokens += 1
                     tokens_in_current_sequence += 1
+
+                    # Update label counts
+                    if tag.startswith("B-") or tag.startswith("I-"):
+                        label_counts[tag] += 1
+
+                        if tag == current_combined_label:
+                            combined_label_count[tag] += 1
+                        else:
+                            combined_label_count[current_combined_label] += 1
+                            current_combined_label = tag
 
                     # Check if a break should be added
                     if maximum_sentence_length is not None and tokens_in_current_sequence >= maximum_sentence_length:
@@ -175,6 +191,13 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
             meta_file.write(f"Total number of annotation documents: {n_docs}\n")
             meta_file.write(f"Total number of tokens: {total_number_of_tokens}\n")
             meta_file.write(f"Longest sequence of tokens: {max_text_sequence_length}\n")
+            meta_file.write("Label Counts:\n")
+            for label, count in label_counts.items():
+                meta_file.write(f"{label}: {count}\n")
+
+            meta_file.write("\nCombined Label Counts:\n")
+            for label, count in combined_label_count.items():
+                meta_file.write(f"{label}: {count}\n")
 
 
 # def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_file_path, meta_file_path, n_docs):
@@ -231,7 +254,7 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
 #             meta_file.write(f"Longest sequence of tokens: {max_text_sequence_length}\n")
 
 
-def split_data_into_train_val_test(annotations, split_ratios=(0.7, 0.15, 0.15), random_seed=777):
+def split_data_into_train_val_test(annotations, split_ratios=(0.7, 0.15, 0.15), random_seed=33):
     train_ratio, validation_ratio, test_ratio = split_ratios
 
     # First, split the data into training and temporary test
@@ -262,7 +285,9 @@ def main(file_paths, min_length=None, max_length=None, split=False, language_mod
             return
 
     annotations, num_of_docs = load_annotations(file_paths)
-    annotations = filter_annotations(annotations)
+    print("number of docs: ", num_of_docs)
+    annotations, num_of_docs = filter_annotations(annotations)
+    print("number of docs after filter: ", num_of_docs)
 
     if split:
         print(f"Splitting data into train, validation and test sets...")
