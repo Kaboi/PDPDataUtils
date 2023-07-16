@@ -81,14 +81,20 @@ def convert_to_iob(lnlp, txt, spns, doc_hash=None):
     doc = lnlp(txt)
     iob_tgs = []
 
+    current_entity_type = None
+
     for tkn in doc:
         tg = None
         for span in spns:
             if tkn.idx == span["start"]:
                 tg = f"B-{span['label']}"
+                current_entity_type = span['label']
                 break
             elif tkn.idx > span["start"] and tkn.idx + len(tkn.text) <= span["end"]:
                 tg = f"I-{span['label']}"
+                if not current_entity_type or current_entity_type != span['label']:
+                    print(f"Warning: Found I- tag ({tg}) without preceding B- tag for the same entity type in document with input hash: {doc_hash}")
+                current_entity_type = span['label']
                 break
 
         # Edge cases if not well preprocessed. If token is a newline character, assign 'O' tag
@@ -99,16 +105,13 @@ def convert_to_iob(lnlp, txt, spns, doc_hash=None):
             if tkn.text.count("\n") > 1:
                 tqdm.write(f"Found multiple newline characters in _input_hash {doc_hash} text at position {tkn.idx}.")
 
-            # Add each newline character as a space to iob_tgs with an 'O' tag
-            # for _ in tkn.text:
-            #     iob_tgs.append((' ', 'O'))
-
             # add only one newline character as a space to iob_tgs with an 'O' tag
             iob_tgs.append((' ', 'O'))
             continue
 
         if not tg:
             tg = "O"
+            current_entity_type = None
 
         iob_tgs.append((tkn.text, tg))
 
@@ -129,7 +132,7 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
     else:
         max_text_sequence_length = 0
         total_number_of_tokens = 0
-        current_combined_label = None
+        current_label = None
 
         with open(out_file_path, "w", newline='') as output_file:
             if separator == ',':
@@ -152,10 +155,33 @@ def convert_to_iob_save(lnlp, anns, maximum_sentence_length, in_file_paths, out_
 
                     label_counts[tag] += 1  # count individual label
 
-                    # for combined labels, consider only B- and I- tags
-                    if tag.startswith("B-") or tag.startswith("I-"):
-                        label_name = tag[2:]
-                        combined_label_counts[label_name] += 1
+                    # Update combined label counts
+                    if tag.startswith("B-"):
+                        # when a new label starts, update count for previous label
+                        if current_label:
+                            combined_label_counts[current_label] += 1
+
+                        # and reset current_label
+                        current_label = tag[2:]
+
+                    elif tag.startswith("I-"):
+                        if tag[2:] == current_label:
+                            # continue counting for current label
+                            continue
+                        else:
+                            # if a different I- tag is encountered without a B- tag
+                            # update count for previous label
+                            if current_label:
+                                combined_label_counts[current_label] += 1
+
+                            # log a warning
+                            print(f"Warning: Found I- tag ({tag}) without preceding B- tag for the same entity type.")
+
+                    else:  # when tag == 'O'
+                        if current_label:
+                            # update count for previous label and reset current_label
+                            combined_label_counts[current_label] += 1
+                            current_label = None
 
                     if maximum_sentence_length is not None and tokens_in_current_sequence >= maximum_sentence_length:
                         if (token.isspace() or token in [",", "."]) and tag == "O":
