@@ -1,3 +1,4 @@
+# Adopted from https://textacy.readthedocs.io/en/stable/api_reference/preprocessing.html
 import re
 from textacy import preprocessing
 
